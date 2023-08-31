@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace Microsoft.AspNetCore.Components.Endpoints.FormMapping;
@@ -25,6 +26,21 @@ internal sealed class FormDataMapperOptions
         _factories.Add(new ComplexTypeConverterFactory(this));
     }
 
+    [RequiresDynamicCode(FormMappingHelpers.RequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(FormMappingHelpers.RequiresUnreferencedCodeMessage)]
+    internal FormDataMapperOptions(IHttpContextAccessor httpContextAccessor)
+    {
+        // We don't use the base constructor here since the ordering of the factories is important.
+        _converters = new(WellKnownConverters.Converters);
+        _factories.Add(new ParsableConverterFactory());
+        _factories.Add(new EnumConverterFactory());
+        _factories.Add(new FileConverterFactory(httpContextAccessor));
+        _factories.Add(new NullableConverterFactory());
+        _factories.Add(new DictionaryConverterFactory());
+        _factories.Add(new CollectionConverterFactory());
+        _factories.Add(new ComplexTypeConverterFactory(this));
+    }
+
     // Not configurable for now, this is the max number of elements we will bind. This is important for
     // security reasons, as we don't want to bind a huge collection and cause perf issues.
     // Some examples of this are:
@@ -35,7 +51,7 @@ internal sealed class FormDataMapperOptions
     // MVC uses 32, JSON uses 64. Let's stick to STJ default.
     internal int MaxRecursionDepth = 64;
 
-    // This is normally 200 (similar to ModelStateDictionary.DefaultMaxAllowedErrors in MVC) 
+    // This is normally 200 (similar to ModelStateDictionary.DefaultMaxAllowedErrors in MVC)
     internal int MaxErrorCount = 200;
 
     internal int MaxKeyBufferSize = FormReader.DefaultKeyLengthLimit;

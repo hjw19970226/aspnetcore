@@ -15,6 +15,7 @@ internal class FormDataMetadataFactory(List<IFormDataConverterFactory> factories
     private readonly FormMetadataContext _context = new();
     private readonly ParsableConverterFactory _parsableFactory = factories.OfType<ParsableConverterFactory>().Single();
     private readonly DictionaryConverterFactory _dictionaryFactory = factories.OfType<DictionaryConverterFactory>().Single();
+    private readonly FileConverterFactory? _fileConverterFactory = factories.OfType<FileConverterFactory>().SingleOrDefault();
     private readonly CollectionConverterFactory _collectionFactory = factories.OfType<CollectionConverterFactory>().Single();
 
     [RequiresDynamicCode(FormMappingHelpers.RequiresDynamicCodeMessage)]
@@ -64,6 +65,12 @@ internal class FormDataMetadataFactory(List<IFormDataConverterFactory> factories
                     _parsableFactory.CanConvert(underlyingType, options)))
             {
                 result.Kind = FormDataTypeKind.Primitive;
+                return result;
+            }
+
+            if (_fileConverterFactory?.CanConvert(type, options) == true)
+            {
+                result.Kind = FormDataTypeKind.File;
                 return result;
             }
 

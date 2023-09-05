@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Samples\PhotinoPlatform\testassets\PhotinoTestApp\PhotinoTestApp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Microsoft.AspNetCore.Components.WebView" />
   </ItemGroup>
 

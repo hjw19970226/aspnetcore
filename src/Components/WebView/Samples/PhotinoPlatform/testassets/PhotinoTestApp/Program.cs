@@ -8,13 +8,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace PhotinoTestApp;
 
+public static class PhotinoMarkerType { }
+
 class Program
 {
     [STAThread]
     static void Main(string[] args)
     {
-        // TODO: Get this from a command-line arg or something
-        var isTestMode = true;
+        var isTestMode = args.Contains("testmode", StringComparer.Ordinal);
 
         var hostPage = isTestMode ? "wwwroot/webviewtesthost.html" : "wwwroot/webviewhost.html";
 

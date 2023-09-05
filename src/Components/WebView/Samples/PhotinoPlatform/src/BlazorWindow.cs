@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Options;
 using PhotinoNET;
 
 namespace Microsoft.AspNetCore.Components.WebView.Photino;
@@ -75,7 +74,7 @@ public class BlazorWindow
     /// </summary>
     public BlazorWindowRootComponents RootComponents { get; }
 
-    private string _latestControlDivValue;
+    private string? _latestControlDivValue;
 
     /// <summary>
     /// Shows the window and waits for it to be closed.
@@ -106,7 +105,6 @@ public class BlazorWindow
 
         _manager.Navigate(_pathBase);
 
-        var testRunning = true;
         var testPassed = false;
 
         if (isTestMode)
@@ -115,56 +113,58 @@ public class BlazorWindow
             {
                 Task.Run(async () =>
                 {
-                    // 1. Wait for WebView ready
-                    Debug.WriteLine($"Waiting for WebView ready...");
-                    var isWebViewReadyRetriesLeft = 5;
-                    while (!isWebViewReady)
+                    try
                     {
-                        Debug.WriteLine($"WebView not ready yet, waiting 1sec...");
-                        await Task.Delay(1000);
-                        isWebViewReadyRetriesLeft--;
-                        if (isWebViewReadyRetriesLeft == 0)
+                        // 1. Wait for WebView ready
+                        Debug.WriteLine($"Waiting for WebView ready...");
+                        var isWebViewReadyRetriesLeft = 5;
+                        while (!isWebViewReady)
                         {
-                            Debug.WriteLine($"WebView never became ready, failing the test...");
-                            // TODO: Fail the test
-                            testRunning = false;
+                            Debug.WriteLine($"WebView not ready yet, waiting 1sec...");
+                            await Task.Delay(1000);
+                            isWebViewReadyRetriesLeft--;
+                            if (isWebViewReadyRetriesLeft == 0)
+                            {
+                                Debug.WriteLine($"WebView never became ready, failing the test...");
+                                return;
+                            }
+                        }
+                        Debug.WriteLine($"WebView is ready!");
+
+                        // 2. Check TestPage starting state
+                        if (!await WaitForControlDiv(controlValueToWaitFor: "0"))
+                        {
                             return;
                         }
-                    }
-                    Debug.WriteLine($"WebView is ready!");
 
-                    // 2. Check TestPage starting state
-                    if (!await WaitForControlDiv(controlValueToWaitFor: "0"))
+                        // 3. Click a button
+                        _window.SendWebMessage($"wvt:ClickButton:incrementButton");
+
+                        // 4. Check TestPage is updated after button click
+                        if (!await WaitForControlDiv(controlValueToWaitFor: "1"))
+                        {
+                            return;
+                        }
+
+                        // 5. If we get here, it all worked!
+                        Debug.WriteLine($"All tests passed!");
+                        testPassed = true;
+                    }
+                    finally
                     {
-                        // TODO: Fail the test
-                        testRunning = false;
-                        return;
+                        _window.Close();
                     }
-
-                    // 3. Click a button
-                    _window.SendWebMessage($"wvt:ClickButton:incrementButton");
-
-                    // 4. Check TestPage is updated after button click
-                    if (!await WaitForControlDiv(controlValueToWaitFor: "1"))
-                    {
-                        // TODO: Fail the test
-                        testRunning = false;
-                        return;
-                    }
-
-                    // 5. If we get here, it all worked!
-                    Debug.WriteLine($"All tests passed!");
-                    testPassed = true;
-
-                    testRunning = false;
-
-                    _window.Close();
                 });
             };
         }
 
         // This line actually starts Photino and makes the window appear
         _window.WaitForClose();
+
+        if (isTestMode)
+        {
+            Console.WriteLine($"Test passed? {testPassed}");
+        }
     }
 
     const int MaxWaitTimes = 30;

@@ -30,7 +30,9 @@ class Program
 
         AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
         {
-            mainWindow.Photino.OpenAlertWindow("Fatal exception", error.ExceptionObject.ToString());
+            Console.Write(
+                "Fatal exception" + Environment.NewLine +
+                error.ExceptionObject.ToString() + Environment.NewLine);
         };
 
         if (isTestMode)
